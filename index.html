@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1020">
+<title>EKRON 對 HOKUTO 3D</title>
+<style>
+  :root { --gold:#ffd25a; --ink:#1b1020; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#1a1020; color:#fff;
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif; touch-action:none; }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
+  .layer { position:fixed; inset:0; pointer-events:none; }
+  .out { text-shadow:0 0 3px #000,0 2px 0 #000,2px 0 0 #000,-2px 0 0 #000,0 -2px 0 #000; }
+  /* HUD */
+  #hud { display:none; }
+  .side { position:absolute; top:max(8px,env(safe-area-inset-top)); width:44%; display:flex; gap:8px; align-items:flex-start; }
+  .side.l { left:max(8px,env(safe-area-inset-left)); }
+  .side.r { right:max(8px,env(safe-area-inset-right)); flex-direction:row-reverse; text-align:right; }
+  .por { width:clamp(44px,7vw,84px); aspect-ratio:160/178; border:2px solid var(--gold); background:#000 center/cover; flex:none; }
+  .bars { flex:1; min-width:0; }
+  .nm { font:900 clamp(14px,2.4vw,28px)/1 Impact,"Arial Black",sans-serif; color:var(--gold); letter-spacing:1px; }
+  .hp { position:relative; height:clamp(10px,2vw,22px); margin-top:4px; background:#2a1620; border:2px solid #e8c070; overflow:hidden; }
+  .hp i { position:absolute; top:0; bottom:0; }
+  .side.l .hp i { left:0 } .side.r .hp i { right:0 }
+  .hp .tr { background:#e04a3a; } .hp .v { background:linear-gradient(#8ff07a,#3fcf3a 50%,#2a9a2a); }
+  .hp .v.low { background:linear-gradient(#ffe07a,#f0b020); }
+  .mt { height:6px; margin-top:3px; width:66%; background:#111; position:relative; }
+  .side.r .mt { margin-left:auto; } .mt i { position:absolute; top:0; bottom:0; background:#3c8cff; }
+  .side.l .mt i { right:0 } .side.r .mt i { left:0 }
+  .mt.full i { background:#fff; animation:bl .2s steps(2) infinite; }
+  @keyframes bl { 50% { background:#ffd25a } }
+  .sub { font:700 clamp(9px,1.3vw,14px)/1.2 Impact,sans-serif; color:#ffe6b0; margin-top:3px; }
+  .wins { margin-top:4px; display:flex; gap:5px; } .side.r .wins { justify-content:flex-end; }
+  .wins b { width:12px; height:12px; border-radius:50%; background:#3a3040; border:2px solid #000; }
+  .wins b.on { background:var(--gold); }
+  #mid { position:absolute; top:max(4px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); text-align:center; }
+  #vs { font-size:clamp(20px,3.6vw,44px); font-weight:900; color:var(--gold); }
+  #timer { font:900 clamp(20px,3.6vw,40px)/1 Impact,sans-serif; }
+  .combo { position:absolute; top:28%; font:900 clamp(30px,6vw,70px)/1 Impact,sans-serif; color:#ffd84a; display:none; }
+  .combo small { font-size:40%; color:#fff; margin-left:4px; }
+  #combo0 { left:8% } #combo1 { right:8% }
+  #ann { position:absolute; left:0; right:0; top:34%; text-align:center; font:900 clamp(40px,10vw,120px)/1 Impact,sans-serif; color:#ff6040; }
+  #ann2 { position:absolute; left:0; right:0; top:52%; text-align:center; font-size:clamp(18px,3.5vw,40px); font-weight:900; color:#ffe9b0; }
+  #hint { position:absolute; left:0; right:0; bottom:12px; text-align:center; font-size:clamp(11px,1.6vw,18px); color:#fff5df; }
+  /* super cut-in */
+  #cut { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(10,0,20,.45); }
+  #cut .band { position:absolute; left:0; right:0; top:38%; height:24%; background:linear-gradient(transparent,rgba(255,150,30,.55),transparent); }
+  #cut img { position:absolute; top:31%; height:38%; aspect-ratio:160/178; border:3px solid var(--gold); }
+  #cut .t { position:relative; font-size:clamp(34px,8vw,90px); font-weight:900; color:#fff4d6; }
+  /* menus */
+  .menu { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,1.5vh,14px);
+    background:radial-gradient(ellipse at 50% 30%,rgba(60,30,70,.25),rgba(15,6,22,.78)); pointer-events:auto; padding:16px; }
+  .menu.show { display:flex; }
+  .title { font:900 clamp(34px,8vw,96px)/1 Impact,"Arial Black",sans-serif; color:var(--gold); text-align:center; }
+  .title em { font-style:normal; color:#ff7a4a; font-family:"Microsoft JhengHei",sans-serif; }
+  .tag { font-size:clamp(13px,2.2vw,22px); color:#fff3dc; margin-bottom:8px; text-align:center; }
+  .btn { pointer-events:auto; min-width:min(80vw,380px); padding:clamp(8px,1.6vh,14px) 18px; font-size:clamp(16px,2.8vw,26px); font-weight:900;
+    color:#fff; background:rgba(40,20,50,.7); border:2px solid #b89060; border-radius:12px; cursor:pointer; font-family:inherit; }
+  .btn.sel, .btn:hover { border-color:var(--gold); background:rgba(255,170,40,.35); color:#ffe08a; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .card { pointer-events:auto; width:min(40vw,300px); padding:12px; border:3px solid #6a5a70; border-radius:14px; background:rgba(0,0,0,.45); cursor:pointer; text-align:center; }
+  .card.sel { border-color:var(--gold); background:rgba(255,180,60,.22); }
+  .card img { width:46%; border:2px solid var(--gold); }
+  .card h3 { margin:6px 0 2px; font:900 clamp(20px,3.5vw,40px)/1 Impact,sans-serif; color:var(--gold); }
+  .card p { margin:2px 0; font-size:clamp(11px,1.6vw,16px); }
+  .help { max-width:min(92vw,900px); font-size:clamp(12px,1.8vw,18px); line-height:1.6; background:rgba(0,0,0,.45); padding:14px 18px; border-radius:12px; }
+  .help td { padding:2px 10px; }
+  /* touch controls */
+  #touch { display:none; pointer-events:none; }
+  #stick { position:fixed; left:max(18px,env(safe-area-inset-left)); bottom:max(18px,env(safe-area-inset-bottom)); width:clamp(120px,22vh,170px); aspect-ratio:1;
+    border-radius:50%; background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35); pointer-events:auto; touch-action:none; }
+  #knob { position:absolute; left:50%; top:50%; width:42%; aspect-ratio:1; margin:-21% 0 0 -21%; border-radius:50%; background:rgba(255,220,140,.6); }
+  #pad { position:fixed; right:max(14px,env(safe-area-inset-right)); bottom:max(14px,env(safe-area-inset-bottom)); width:clamp(190px,40vh,290px); aspect-ratio:1.15; pointer-events:none; }
+  .tb { position:absolute; width:31%; aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center; pointer-events:auto; touch-action:none;
+    font-weight:900; font-size:clamp(13px,2.6vh,19px); color:#fff; border:2px solid rgba(255,255,255,.55); background:rgba(40,30,60,.5); }
+  .tb.on { background:rgba(255,200,80,.7); color:#2a1400; }
+  .tb[data-k=a] { left:2%; bottom:2%; } .tb[data-k=b] { left:35%; bottom:2%; } .tb[data-k=c] { left:68%; bottom:2%; }
+  .tb[data-k=s] { left:18%; bottom:44%; background:rgba(255,120,40,.45); } .tb[data-k=x] { left:52%; bottom:44%; background:rgba(150,80,255,.5); }
+  #pause { position:fixed; bottom:max(8px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); pointer-events:auto;
+    padding:4px 14px; border-radius:10px; border:1px solid #fff8; background:#0006; color:#fff; font-size:14px; display:none; }
+  #app { position:fixed; left:0; top:0; width:100vw; height:100vh; overflow:hidden; transform:translateZ(0); }
+  body.rot #app { transform-origin:0 0; transform:rotate(90deg) translateY(-100%); }
+  #load { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--gold); background:#1a1020; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="app">
+<canvas id="c"></canvas>
+
+<div id="hud" class="layer">
+  <div class="side l"><div class="por" id="por0"></div><div class="bars">
+    <div class="nm out" id="nm0">EKRON</div><div class="hp"><i class="tr" id="tr0"></i><i class="v" id="hp0"></i></div>
+    <div class="mt" id="mtw0"><i id="mt0"></i></div><div class="sub out" id="sub0"></div><div class="wins" id="w0"><b></b><b></b></div></div></div>
+  <div class="side r"><div class="por" id="por1"></div><div class="bars">
+    <div class="nm out" id="nm1">HOKUTO</div><div class="hp"><i class="tr" id="tr1"></i><i class="v" id="hp1"></i></div>
+    <div class="mt" id="mtw1"><i id="mt1"></i></div><div class="sub out" id="sub1"></div><div class="wins" id="w1"><b></b><b></b></div></div></div>
+  <div id="mid"><div id="vs" class="out">對</div><div id="timer" class="out">99</div></div>
+  <div class="combo out" id="combo0"></div><div class="combo out" id="combo1"></div>
+  <div id="ann" class="out"></div><div id="ann2" class="out"></div>
+  <div id="hint" class="out"></div>
+</div>
+<div id="cut"><div class="band"></div><img id="cutimg" alt=""><div class="t out" id="cutt"></div></div>
+
+<div id="touch"><div id="stick"><div id="knob"></div></div>
+  <div id="pad"><div class="tb" data-k="a">輕</div><div class="tb" data-k="b">重</div><div class="tb" data-k="c">踢</div>
+  <div class="tb" data-k="s">必殺</div><div class="tb" data-k="x">超必</div></div></div>
+<button id="pause">暫停</button>
+
+<div class="menu" id="m-title">
+  <div class="title">EKRON <em>對</em> HOKUTO</div>
+  <div class="tag out">劍術大師 vs 長頸鹿馴獸師 ── 3D 低多邊形版</div>
+  <button class="btn" data-act="1p">單人模式　1P vs 電腦</button>
+  <button class="btn" data-act="2p" id="b2p">雙人對戰　（鍵盤）</button>
+  <button class="btn" data-act="help">操作說明</button>
+  <button class="btn" data-act="music" id="bmusic">音樂：開</button>
+</div>
+<div class="menu" id="m-select">
+  <div class="tag out" id="seltitle" style="font-size:clamp(18px,3vw,32px);color:#ffd25a">選擇你的角色</div>
+  <div class="row">
+    <div class="card" data-c="0"><img src="tex/portrait_ekron.jpg" alt=""><h3>EKRON</h3><p>劍術大師</p><p>必殺：A-SHA 劍氣</p><p>超必殺：雷霆一閃</p></div>
+    <div class="card" data-c="1"><img src="tex/portrait_hokuto.jpg" alt=""><h3>HOKUTO</h3><p>長頸鹿馴獸師</p><p>必殺：長頸鹿衝撞</p><p>超必殺：北斗百裂拳</p></div>
+  </div>
+  <div class="row"><button class="btn" data-act="back" style="min-width:140px">返回</button><button class="btn sel" data-act="pick" style="min-width:180px">確定</button></div>
+</div>
+<div class="menu" id="m-diff">
+  <div class="tag out" style="font-size:clamp(18px,3vw,32px);color:#ffd25a">選擇難度</div>
+  <button class="btn" data-d="0">簡單 EASY</button><button class="btn sel" data-d="1">普通 NORMAL</button><button class="btn" data-d="2">困難 HARD</button>
+  <button class="btn" data-act="back" style="min-width:140px">返回</button>
+</div>
+<div class="menu" id="m-help">
+  <div class="help">
+    <table><tr><td></td><td><b>單人</b></td><td><b>雙人 1P</b></td><td><b>雙人 2P</b></td></tr>
+    <tr><td>移動／跳／蹲</td><td>WASD 或方向鍵</td><td>WASD</td><td>方向鍵</td></tr>
+    <tr><td>輕／重／踢</td><td>J K L</td><td>F G H</td><td>數字鍵 1 2 3</td></tr>
+    <tr><td>必殺／超必殺</td><td>U I</td><td>R T</td><td>數字鍵 4 5</td></tr></table>
+    <p>📱 手機：左下搖桿移動（往上跳、往下蹲），右下按鈕出招。手機直拿也會自動轉成橫向寬螢幕。</p>
+    <p>防禦：按住「後」方向（蹲防擋下段）。↓＋攻擊＝蹲姿招式，↓＋必殺＝昇龍劍／旋風腿。</p>
+    <p>連段：輕 → 重 → 必殺 可取消；集氣滿（MAX）可放超必殺。HOKUTO 的長頸鹿會一直跟著他，放必殺就衝出去！</p>
+  </div>
+  <button class="btn" data-act="back">返回</button>
+</div>
+<div class="menu" id="m-pause">
+  <div class="title" style="font-size:clamp(36px,7vw,70px)">暫停</div>
+  <button class="btn sel" data-act="resume">繼續</button><button class="btn" data-act="quit">回主選單</button>
+</div>
+<div class="menu" id="m-end">
+  <div class="title" id="endt" style="font-size:clamp(34px,7vw,84px)"></div><div class="tag out" id="ends"></div>
+  <button class="btn sel" data-act="again">再戰一場</button><button class="btn" data-act="quit">回主選單</button>
+</div>
+<div id="load">載入中…</div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>
