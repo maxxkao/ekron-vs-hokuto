@@ -13,7 +13,8 @@
   html,body { margin:0; height:100%; overflow:hidden; background:#1a1020; color:#fff;
     font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif; touch-action:none; }
   /* everything inside #app is positioned against #app with an explicit layer order (iOS WebKit + WebGL canvas) */
-  #c { position:absolute; top:0; right:0; bottom:0; left:0; width:100%; height:100%; display:block; z-index:0; }
+  /* the WebGL canvas is never inside a transformed box (old iOS draws it above everything otherwise) */
+  #c { position:fixed; top:0; left:0; width:100vw; height:100vh; display:block; z-index:0; }
   .layer { position:absolute; top:0; right:0; bottom:0; left:0; pointer-events:none; z-index:2; }
   .out { text-shadow:0 0 3px #000,0 2px 0 #000,2px 0 0 #000,-2px 0 0 #000,0 -2px 0 #000; }
   /* HUD */
@@ -83,7 +84,7 @@
   .tb[data-k=s] { left:18%; bottom:44%; background:rgba(255,120,40,.45); } .tb[data-k=x] { left:52%; bottom:44%; background:rgba(150,80,255,.5); }
   #pause { position:absolute; z-index:5; bottom:max(8px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); pointer-events:auto;
     padding:4px 14px; border-radius:10px; border:1px solid #fff8; background:#0006; color:#fff; font-size:14px; display:none; }
-  #app { position:fixed; left:0; top:0; width:100vw; height:100vh; overflow:hidden; transform:translateZ(0); }
+  #app { position:fixed; left:0; top:0; width:100vw; height:100vh; overflow:hidden; z-index:1; pointer-events:none; }
   body.rot #app { transform-origin:0 0; transform:rotate(90deg) translateY(-100%); }
   #load { position:absolute; top:0; right:0; bottom:0; left:0; z-index:9; display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--gold); background:#1a1020; }
 </style>
@@ -110,8 +111,8 @@ window.addEventListener('unhandledrejection', function (e) { __showErr('Promise:
 </script>
 </head>
 <body>
-<div id="app">
 <canvas id="c"></canvas>
+<div id="app">
 
 <div id="hud" class="layer">
   <div class="side l"><div class="por" id="por0"></div><div class="bars">
@@ -176,6 +177,6 @@ window.addEventListener('unhandledrejection', function (e) { __showErr('Promise:
 </div>
 <div id="load">載入中…</div>
 </div>
-<script type="module" src="game.js?v=20261111e"></script>
+<script type="module" src="game.js?v=20261111f"></script>
 </body>
 </html>

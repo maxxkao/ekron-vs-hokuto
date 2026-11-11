@@ -174,7 +174,7 @@ if (!document.createElement('canvas').getContext('webgl2')) {
 // phones: no MSAA, lower resolution, cheaper shadows; quality drops further on its own if frames run slow
 const LOW_END = IS_IOS && Math.max(screen.width, screen.height) <= 736 || location.search.includes('low');
 const QUALITY = { pr: LOW_END ? 1 : IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: LOW_END ? 2 : 0 };
-window.__BUILD = '20261111e' + (LOW_END ? ' low' : '');
+window.__BUILD = '20261111f' + (LOW_END ? ' low' : '');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, powerPreference: 'high-performance' });
 renderer.setPixelRatio(QUALITY.pr);
 renderer.shadowMap.enabled = !LOW_END;
@@ -214,8 +214,13 @@ function resize() {
   const w = ROTATED ? innerHeight : innerWidth, h = ROTATED ? innerWidth : innerHeight;
   app.style.width = w + 'px'; app.style.height = h + 'px';
   document.body.classList.toggle('rot', ROTATED);
-  renderer.setSize(w, h, false);
+  // canvas stays upright and full-screen; when the phone is upright the picture itself is turned 90° clockwise
+  renderer.setSize(innerWidth, innerHeight);
   camera.aspect = w / h; camera.updateProjectionMatrix();
+  if (ROTATED) {
+    camera.projectionMatrix.premultiply(new THREE.Matrix4().set(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1));
+    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+  }
 }
 addEventListener('orientationchange', () => setTimeout(resize, 200));
 addEventListener('resize', resize); resize();
@@ -271,7 +276,7 @@ function updateBolts() { for (let i = bolts.length - 1; i >= 0; i--) { if (--bol
 // ---------------------------------------------------------------- assets
 const loader = new GLTFLoader();
 const ASSETS = {};
-const BUILD = '20261111e';   // bump when models change so browsers don't keep old copies
+const BUILD = '20261111f';   // bump when models change so browsers don't keep old copies
 let PACKED = null;
 async function loadGLB(name) {
   try { return await new Promise((res, rej) => loader.load(`models/${name}.glb?v=${BUILD}`, g => res(g.scene), undefined, rej)); }
