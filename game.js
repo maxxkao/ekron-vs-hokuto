@@ -19,11 +19,14 @@ const wx = x => (x - 640) * PX;
 
 const CHARS = {
   ekron: { name: 'EKRON', sub: 'SWORD MASTER', walk: 4.3, back: 3.4, jvx: 4.6, reach: 190, sword: true, superName: '雷霆一閃', col: '#ffb030' },
+  paul: { name: 'PAUL LIN', sub: 'FLUTE MASTER', walk: 3.9, back: 3.2, jvx: 4.3, reach: 150, sword: false, superName: '魔笛狂想曲', col: '#5ab0ff' },
   hokuto: { name: 'HOKUTO', sub: 'GIRAFFE TAMER & GIRAFFE', walk: 5.0, back: 4.1, jvx: 5.0, reach: 120, sword: false, superName: '北斗百裂拳', col: '#a070ff' },
 };
 
 // ---------------------------------------------------------------- poses / moves (ported from the 2D game)
 const E_BASE = { tor: 6, hd: 0, ua1: 42, fa1: 118, ua2: 26, fa2: 106, th1: 22, sh1: 2, th2: -20, sh2: -8, sw: 152, hx: 0 };
+// always playing: angles found by search so the recorder's mouthpiece sits on his lips
+const P_BASE = { tor: 4, hd: -6, ad1: -43, ua1: 48, fa1: 206, sw: 164, ad2: 74, ua2: 116, fa2: 198, th1: 34, sh1: 4, th2: -34, sh2: -10, hx: 0 };
 const H_BASE = { tor: 8, hd: 0, ua1: 36, fa1: 146, ua2: 22, fa2: 152, th1: 25, sh1: 0, th2: -24, sh2: -10, sw: 0, hx: 0 };
 const SQUAT = { th1: 95, sh1: -18, th2: 68, sh2: -80, tor: 22 };
 const JUMP = { th1: 72, sh1: -22, th2: 22, sh2: -62, tor: 4 };
@@ -66,6 +69,34 @@ function ekronMoves() {
       a2: { tor: 22, ua1: 140, fa1: 170, sw: 200, th1: 62, sh1: 10, th2: -50, sh2: -30, hx: 16 } }),
   };
 }
+function paulMoves() {
+  const PLAY = { ad1: -43, ua1: 48, fa1: 206, sw: 164, ad2: 74, ua2: 116, fa2: 198, tor: 2, hd: -8 };
+  const B = M(P_BASE, { ad1: -8, ad2: 8 }), C = M(B, SQUAT), J = M(B, JUMP);   // attacks: arms free
+  return {
+    a: mv(B, { st: 5, ac: 3, rc: 10, dmg: 34, box: [30, 255, 150, 60], hs: 15, bs: 9, push: 4,
+      w: { ua1: 40, fa1: 150, sw: 150 }, a: { ua1: 90, fa1: 92, sw: 92, tor: 14, hx: 8, ua2: 60, fa2: 100 } }),
+    b: mv(B, { level: 3, st: 12, ac: 5, rc: 20, dmg: 88, box: [10, 300, 175, 220], hs: 21, bs: 15, push: 9, hsnd: 'hit_h', hstop: 10, shake: 7,
+      w: { ua1: 165, fa1: 178, sw: 192, ua2: 150, fa2: 176, tor: -14 }, a: { ua1: 75, fa1: 60, sw: 52, tor: 28, th1: 45, sh1: 6, hx: 20, ua2: 70, fa2: 60 } }),
+    c: mv(B, { level: 2, st: 10, ac: 4, rc: 16, dmg: 74, box: [25, 260, 150, 110], hs: 20, push: 9, hsnd: 'hit_h', hstop: 9, shake: 6,
+      w: { th1: 88, sh1: -40, tor: -10 }, a: { th1: 104, sh1: 100, tor: -26, th2: -8, sh2: -8 } }),
+    da: mv(C, { crouch: true, st: 5, ac: 3, rc: 10, dmg: 32, box: [30, 160, 130, 50], hs: 14, a: { ua1: 86, fa1: 90, sw: 92, tor: 24 } }),
+    db: mv(C, { crouch: true, level: 3, st: 11, ac: 5, rc: 22, dmg: 76, kind: 'low', kd: true, launch: 6, box: [15, 70, 180, 70], hsnd: 'hit_h', hstop: 9, shake: 5,
+      w: { tor: 14 }, a: { th1: 88, sh1: 90, tor: 34 } }),
+    dc: mv(C, { crouch: true, level: 2, st: 7, ac: 4, rc: 12, dmg: 42, kind: 'low', box: [30, 65, 135, 55], hs: 15, a: { th1: 84, sh1: 89, tor: -6 } }),
+    ja: mv(J, { air: true, st: 5, ac: 7, rc: 8, dmg: 46, kind: 'high', box: [20, 235, 120, 130], hs: 17, a: { ua1: 80, fa1: 70, sw: 70, tor: 12 } }),
+    jb: mv(J, { air: true, level: 3, st: 8, ac: 6, rc: 10, dmg: 80, kind: 'high', box: [5, 240, 170, 240], hs: 21, hsnd: 'hit_h', hstop: 10, shake: 6,
+      w: { ua1: 165, fa1: 178, sw: 195, ua2: 150, fa2: 172 }, a: { ua1: 78, fa1: 45, sw: 35, tor: 26, ua2: 70, fa2: 45 } }),
+    jc: mv(J, { air: true, level: 2, st: 6, ac: 8, rc: 8, dmg: 64, kind: 'high', box: [20, 95, 130, 100], hs: 18, a: { th1: 74, sh1: 70, th2: -10, sh2: -52, tor: -14 } }),
+    s: mv(B, { level: 4, st: 14, ac: 3, rc: 22, box: null, proj: 'wave', snd: 'flute', w: PLAY, a: M(PLAY, { tor: 10, hd: -14 }) }),
+    ds: mv(B, { level: 4, st: 5, ac: 9, rc: 22, dmg: 86, box: [-50, 360, 250, 330], inv: 12, kd: true, launch: 14, hsnd: 'hit_h', snd: 'flute', hstop: 11, shake: 8, burst: true,
+      w: PLAY, a: { ua1: 172, fa1: 178, sw: 182, ua2: 166, fa2: 178, tor: -6, th1: 22, th2: -22 } }),
+    x: mv(B, { level: 5, cost: 100, st: 10, ac: 40, rc: 30, dmg: 15, rehit: 4, maxhits: 10, box: [-10, 330, 560, 330], inv: 48, hs: 24, last_hs: 60, kd: true, launch: 14,
+      noscale: true, hsnd: 'hit_l', snd: 'flute_super', hstop: 3, shake: 4, notes: true,
+      w: M(PLAY, { tor: 10, hd: 0 }), a: M(PLAY, { tor: -18, hd: -26, ua1: PLAY.ua1 + 30, ua2: PLAY.ua2 + 30, sw: PLAY.sw + 25, th1: 44, th2: -44, sh1: 8, sh2: -14 }),
+      a2: M(PLAY, { tor: -6, hd: -14, ua1: PLAY.ua1 + 22, ua2: PLAY.ua2 + 22, sw: PLAY.sw + 18, th1: 40, th2: -40 }) }),
+  };
+}
+const MOVESETS = { ekron: ekronMoves, hokuto: hokutoMoves, paul: paulMoves };
 function hokutoMoves() {
   const B = H_BASE, C = M(B, SQUAT), J = M(B, JUMP);
   return {
@@ -134,6 +165,8 @@ const Audio = {
       case 'move': this.osc('square', 660, 660, 0.05, 0.07 * v); break;
       case 'super': this.osc('sawtooth', 120, 2000, 0.8, 0.14 * v); this.nz(0.8, 0.4 * v, 'bandpass', 300, 4000); break;
       case 'giraffe': for (let k = 0; k < 6; k++) this.osc('sine', 80, 35, 0.16, 0.8 * v, k * 0.13); break;
+      case 'flute': [784, 988, 1175].forEach((f, i) => { this.osc('sine', f, f * 1.01, 0.22, 0.16 * v, i * 0.09); this.osc('triangle', f * 2, f * 2, 0.18, 0.03 * v, i * 0.09); }); break;
+      case 'flute_super': [659, 784, 988, 1175, 1319, 1568, 1319, 1175].forEach((f, i) => this.osc('sine', f, f * 1.005, 0.2, 0.15 * v, i * 0.11)); this.nz(0.9, 0.15 * v, 'bandpass', 1200, 3000, 0, 4); break;
       case 'land': this.nz(0.12, 0.5 * v, 'lowpass', 600, 100); this.osc('sine', 70, 40, 0.12, 0.6 * v); break;
     }
   },
@@ -174,7 +207,7 @@ if (!document.createElement('canvas').getContext('webgl2')) {
 // phones: no MSAA, lower resolution, cheaper shadows; quality drops further on its own if frames run slow
 const LOW_END = IS_IOS && Math.max(screen.width, screen.height) <= 736 || location.search.includes('low');
 const QUALITY = { pr: LOW_END ? 1 : IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: LOW_END ? 2 : 0 };
-window.__BUILD = '20261111f' + (LOW_END ? ' low' : '');
+window.__BUILD = '20261112b' + (LOW_END ? ' low' : '');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, powerPreference: 'high-performance' });
 renderer.setPixelRatio(QUALITY.pr);
 renderer.shadowMap.enabled = !LOW_END;
@@ -194,6 +227,20 @@ const scene = new THREE.Scene();
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; scene.background = t;
 }
 scene.fog = new THREE.Fog(0xf3d6da, 45, 120);
+function skyTex(a, b, c) {
+  const cv = document.createElement('canvas'); cv.width = 4; cv.height = 256;
+  const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, a); gr.addColorStop(0.55, b); gr.addColorStop(1, c); g.fillStyle = gr; g.fillRect(0, 0, 4, 256);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const STAGES = [
+  { key: 'stage', name: '麵碗山谷', sky: scene.background, fog: 0xf3d6da },
+  { key: 'street', name: '丹丹漢堡', sky: skyTex('#a9c4e2', '#dfe7ef', '#f3eee6'), fog: 0xe9edf1 },
+];
+function setStage(i) {
+  STAGES.forEach((st, k) => { if (st.group) st.group.visible = k === i; });
+  scene.background = STAGES[i].sky; scene.fog.color.setHex(STAGES[i].fog);
+}
 const camera = new THREE.PerspectiveCamera(30, 16 / 9, 0.1, 200);
 camera.position.set(0, 1.9, 9);
 
@@ -236,6 +283,30 @@ function glowTex(r, g, b) {
 const TEX = { spark: glowTex(255, 200, 90), blue: glowTex(110, 170, 255), purple: glowTex(180, 120, 255), dust: glowTex(230, 210, 210) };
 const texLoader = new THREE.TextureLoader();
 function loadTex(u) { const t = texLoader.load(u); t.colorSpace = THREE.SRGBColorSpace; return t; }
+function noteTex() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+  const c = cv.getContext('2d'); c.font = 'bold 54px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.shadowColor = '#3cf'; c.shadowBlur = 10; c.fillStyle = '#e8fbff'; c.fillText('♪', 32, 34);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+TEX.note = noteTex();
+// expanding sound rings (Paul)
+const rings = [];
+const ringGeo = new THREE.TorusGeometry(0.5, 0.035, 6, 24);
+function soundRing(x, y, dir, life = 18, size = 0.5, speed = 0.06) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x7fd8ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  m.position.set(x, y, 0.45); m.rotation.y = dir ? dir * 0.95 : 0;   // turned toward the camera so the ring reads as a ring m.scale.setScalar(size); scene.add(m);
+  rings.push({ m, life, ml: life, dir, speed, size });
+}
+function updateRings() {
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const r = rings[i]; r.life--;
+    const t = 1 - r.life / r.ml;
+    r.m.position.x += r.dir * r.speed; r.m.scale.setScalar(r.size * (1 + t * 1.6)); r.m.material.opacity = 1 - t;
+    if (r.life <= 0) { scene.remove(r.m); r.m.material.dispose(); rings.splice(i, 1); }
+  }
+}
+function notes(x, y, dir, n = 2) { for (let i = 0; i < n; i++) spawn(x + rnd(-0.1, 0.1), y + rnd(-0.15, 0.2), 0.5, dir * rnd(0.02, 0.05), rnd(0.005, 0.02), 30, 0.28, 'note', -0.0006, 0, false); }
 TEX.slash = loadTex('tex/fx_slash.png'); TEX.crescent = loadTex('tex/fx_crescent.png');
 
 // ---------------------------------------------------------------- particles
@@ -276,7 +347,7 @@ function updateBolts() { for (let i = bolts.length - 1; i >= 0; i--) { if (--bol
 // ---------------------------------------------------------------- assets
 const loader = new GLTFLoader();
 const ASSETS = {};
-const BUILD = '20261111f';   // bump when models change so browsers don't keep old copies
+const BUILD = '20261112b';   // bump when models change so browsers don't keep old copies
 let PACKED = null;
 async function loadGLB(name) {
   try { return await new Promise((res, rej) => loader.load(`models/${name}.glb?v=${BUILD}`, g => res(g.scene), undefined, rej)); }
@@ -351,8 +422,8 @@ const JOINTS = ['root', 'hips', 'spine', 'neck', 'head', 'sh1', 'el1', 'ha1', 's
 class Fighter {
   constructor(cid, idx) {
     this.cid = cid; this.c = CHARS[cid]; this.idx = idx;
-    this.moves = cid === 'ekron' ? ekronMoves() : hokutoMoves();
-    this.base = cid === 'ekron' ? E_BASE : H_BASE;
+    this.moves = MOVESETS[cid]();
+    this.base = { ekron: E_BASE, hokuto: H_BASE, paul: P_BASE }[cid];
     this.holder = new THREE.Group();
     this.model = skClone(ASSETS[cid]);
     prepShadows(this.model, true, false);
@@ -372,7 +443,7 @@ class Fighter {
       const b = this.j[n]; if (!b) continue;
       const qb = mq.clone().multiply(b.getWorldQuaternion(new THREE.Quaternion()));
       const qi = qb.clone().invert();
-      this.rest[n] = { q: b.quaternion.clone(), qb, qi, z: new THREE.Vector3(0, 0, 1).applyQuaternion(qi), y: new THREE.Vector3(0, 1, 0).applyQuaternion(qi) };
+      this.rest[n] = { q: b.quaternion.clone(), qb, qi, x: new THREE.Vector3(1, 0, 0).applyQuaternion(qi), z: new THREE.Vector3(0, 0, 1).applyQuaternion(qi), y: new THREE.Vector3(0, 1, 0).applyQuaternion(qi) };
     }
     // soft glow over the whole blade: two additive shells pushed out along smooth normals
     const blade = this.meshes.find(m => m.material.name === 'blade');
@@ -398,6 +469,7 @@ class Fighter {
       move: null, mkey: null, mt: 0, hits: 0, lasthit: -99, moveHit: false, inv: 0, flash: 0, t: 0, walkPh: 0, backHeld: false, downHeld: false,
       guarding: false, juggle: 0, combo: 0, ko: false, cancelUsed: false, crouchBlock: false, spinA: 0 });
     this.disp = { ...this.base };
+    this.showParts();
   }
   get air() { return this.y > 0.5; }
   hurtbox() {
@@ -510,6 +582,13 @@ class Fighter {
       if (this.mkey === 'x' && this.cid === 'ekron' && this.t % 2 === 0)
         bolt(wx(this.x - this.facing * 120), (this.y + rnd(80, 280)) * PX, wx(this.x + this.facing * 140), (this.y + rnd(80, 280)) * PX);
       if (m.spin) this.spinA += 0.55;
+      if (m.notes && this.t % 3 === 0) {      // Paul's super: rings and notes pouring out of the flute
+        const tp = this.fluteTip() || new THREE.Vector3(wx(this.x + this.facing * 70), (this.y + 250) * PX, 0);
+        soundRing(tp.x, tp.y + 0.1, this.facing, 22, 0.55, 0.11);
+        notes(tp.x, tp.y + 0.15, this.facing, 3);
+        fight.shake = Math.max(fight.shake, 2.5);
+      }
+      if (m.burst && this.mt === st + 1) for (let k = 0; k < 4; k++) soundRing(wx(this.x), (this.y + 120 + k * 60) * PX, 0, 16, 0.6 + k * 0.1, 0);
     } else if (this.mt > st + ac && m.vx && !m.air && !this.air) this.vx *= 0.7;
     if (m.proj_end && this.mt === st + ac + 1) fight.spawnProj(this, m.proj_end);
     if (this.moveHit && !this.cancelUsed && this.mt > st && !m.air) {
@@ -522,7 +601,8 @@ class Fighter {
     if (this.mt >= st + ac + rc) { if (this.air) { this.state = 'jump'; this.move = null; } else this.toIdle(); }
   }
   blockPose(cr) {
-    const p = this.cid === 'ekron' ? M(this.base, { tor: -6, ua1: 62, fa1: 168, sw: 178, ua2: 52, fa2: 160, th1: 18, th2: -28, sh2: -14 })
+    const p = this.cid === 'paul' ? M(this.base, { tor: -6, ua1: 42, fa1: 176, sw: 180, ua2: 38, fa2: 172, th1: 20, th2: -30, sh2: -12 })
+      : this.cid === 'ekron' ? M(this.base, { tor: -6, ua1: 62, fa1: 168, sw: 178, ua2: 52, fa2: 160, th1: 18, th2: -28, sh2: -14 })
       : M(this.base, { tor: -6, ua1: 50, fa1: 176, ua2: 46, fa2: 170, th1: 18, th2: -28, sh2: -14 });
     if (cr) { Object.assign(p, SQUAT); p.tor = 10; }
     return p;
@@ -560,6 +640,7 @@ class Fighter {
     if (st === 'getup') return [M(b, SQUAT), 0.2];
     if (st === 'win') {
       const k = Math.sin(this.t * 0.08);
+      if (this.cid === 'paul') return [M(b, { tor: -6 + k * 3, hd: -8 + k * 3, ad2: 0, ua2: 172 + k * 4, fa2: 178, th1: 14, th2: -14, sh1: 0, sh2: 0 }), 0.12];
       return [this.cid === 'ekron' ? M(b, { tor: -4, ua1: 168 + k * 4, fa1: 178, sw: 180, ua2: -20, fa2: 10, th1: 18, sh1: 0, th2: -18, sh2: 0 })
         : M(b, { tor: 0, ua1: 68, fa1: 150 + k * 3, ua2: 72, fa2: 160 + k * 3, th1: 6, sh1: 0, th2: -6, sh2: 0, hd: 8 }), 0.12];
     }
@@ -571,14 +652,27 @@ class Fighter {
     if (!(this.state === 'attack' && this.move && this.move.spin)) this.spinA *= 0.7;
   }
   // ----- 3D
+  part(n) { if (!this._parts) { this._parts = {}; this.model.traverse(o => { if (o.isMesh && ['cap', 'caphand', 'puff'].includes(o.name)) this._parts[o.name] = o; }); } return this._parts[n]; }
+  showParts() {
+    if (this.cid !== 'paul') return;
+    const win = this.state === 'win';
+    const blowing = this.state === 'attack' && this.move && this.move.notes && this.mt > this.move.st;
+    if (this.part('cap')) this.part('cap').visible = !win;
+    if (this.part('caphand')) this.part('caphand').visible = win;
+    if (this.part('puff')) { this.part('puff').visible = blowing; }
+  }
+  fluteTip() { const v = new THREE.Vector3(0, 0.3, 0); return this.j.sw ? this.j.sw.localToWorld(v) : null; }
   render(shakeX, shakeY) {
+    this.showParts();
     const p = this.disp, j = this.j, f = this.facing;
     const R = v => v * D2R;
     const rot = (n, a) => { const r = this.rest[n]; if (!r) return; j[n].quaternion.copy(r.q).multiply(_q.setFromAxisAngle(r.z, a)); };
     rot('spine', -R(p.tor));
     { const r = this.rest.head; j.head.quaternion.copy(r.q).multiply(_q.setFromAxisAngle(r.y, -HEAD_YAW)).multiply(_q2.setFromAxisAngle(r.z, -R(p.hd))); }
-    rot('sh1', R(p.ua1 + p.tor)); rot('el1', R(p.fa1 - p.ua1));
-    rot('sh2', R(p.ua2 + p.tor)); rot('el2', R(p.fa2 - p.ua2));
+    // shoulders: forward/back swing plus an inward swing (ad) that brings the hands toward the chest
+    const rotSh = (n, a, ad) => { const r = this.rest[n]; if (!r) return; j[n].quaternion.copy(r.q).multiply(_q2.setFromAxisAngle(r.x, ad)).multiply(_q.setFromAxisAngle(r.z, a)); };
+    rotSh('sh1', R(p.ua1 + p.tor), R(p.ad1 || 0)); rot('el1', R(p.fa1 - p.ua1));
+    rotSh('sh2', R(p.ua2 + p.tor), R(p.ad2 || 0)); rot('el2', R(p.fa2 - p.ua2));
     rot('th1', R(p.th1)); rot('kn1', R(p.sh1 - p.th1));
     rot('th2', R(p.th2)); rot('kn2', R(p.sh2 - p.th2));
     rot('sw', R(p.sw - p.fa1));
@@ -596,6 +690,16 @@ class Fighter {
     chk('toe1', 0); chk('toe2', 0); chk('an1', 0.09); chk('an2', 0.09); chk('kn1', 0.07); chk('kn2', 0.07);
     chk('ha1', 0.05); chk('ha2', 0.05); chk('head', 0.2, 0.18); chk('hips', 0.13); chk('spine', 0.13, 0.42);
     j.root.position.y = this.y * PX - low + shakeY;
+    // Paul: cheeks puff and pulse while he blows the super; shiny bald head when he wins
+    if (this.cid === 'paul') {
+      const pf = this.part('puff');
+      if (pf && pf.visible) pf.scale.setScalar(1 + 0.25 * Math.abs(Math.sin(this.t * 0.6)));
+      if (this.state === 'win' && this.t % 6 === 0 && this.j.head) {
+        const hp = this.j.head.localToWorld(this.rest.head.y.clone().multiplyScalar(0.36));
+        spawn(hp.x + rnd(-0.1, 0.1), hp.y + rnd(0, 0.08), hp.z + 0.06, 0, 0.003, 12, rnd(0.07, 0.14), 'spark');
+        if (this.t % 30 === 0) spawn(hp.x - 0.03, hp.y + 0.02, hp.z + 0.08, 0, 0, 16, 0.3, 'spark');
+      }
+    }
     // hit flash
     const fl = this.flash > 0;
     if (fl !== this._fl) { this._fl = fl; for (const m of this.meshes) { if (!m.material.emissive) continue; if (fl) { m.userData.e = m.userData.e || m.material.emissive.clone(); m.material.emissive.setRGB(0.6, 0.5, 0.35); } else if (m.userData.e) m.material.emissive.copy(m.userData.e); } }
@@ -645,16 +749,21 @@ class Giraffe {
 class Proj {
   constructor(owner, kind, x, y, vx, g) {
     Object.assign(this, { owner, kind, x, y, vx, f: vx > 0 ? 1 : -1, t: 0, dead: false, hit: false, g });
-    if (kind === 'beam') {
+    if (kind === 'wave') {
+      Object.assign(this, { dmg: 68, hs: 20, bs: 14, push: 6, launch: 0, kd: false });
+    } else if (kind === 'beam') {
       Object.assign(this, { dmg: 70, hs: 20, bs: 14, push: 6, launch: 0, kd: false });
       this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.25), new THREE.MeshBasicMaterial({ map: TEX.crescent, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       this.mesh.scale.x = this.f; scene.add(this.mesh);
     } else Object.assign(this, { dmg: kind === 'giraffe' ? 95 : 90, hs: 24, bs: 18, push: 8, kd: true, launch: kind === 'giraffe' ? 11 : 15 });
   }
-  rect() { return this.kind === 'beam' ? [this.x - 32, this.x + 32, this.y - 70, this.y + 70] : [this.x - 40 + this.f * 40 - 75, this.x - 40 + this.f * 40 + 75, 0, 330]; }
+  rect() { if (this.kind === 'wave') return [this.x - 45, this.x + 45, this.y - 85, this.y + 85]; return this.kind === 'beam' ? [this.x - 32, this.x + 32, this.y - 70, this.y + 70] : [this.x - 40 + this.f * 40 - 75, this.x - 40 + this.f * 40 + 75, 0, 330]; }
   update(fight) {
     this.t++; this.x += this.vx;
-    if (this.kind === 'beam') {
+    if (this.kind === 'wave') {
+      if (this.t % 4 === 1) soundRing(wx(this.x), this.y * PX, this.f, 14, 0.42 + 0.08 * Math.sin(this.t), 0.02);
+      if (this.t % 6 === 0) notes(wx(this.x), this.y * PX, -this.f * 0.3, 1);
+    } else if (this.kind === 'beam') {
       this.mesh.position.set(wx(this.x), this.y * PX, 0.4);
       if (this.t % 2 === 0) spawn(wx(this.x - this.f * 20), (this.y + rnd(-50, 50)) * PX, 0.4, -this.f * 0.01, 0, 16, 0.18, 'spark');
     } else {
@@ -697,7 +806,7 @@ class CPU {
       if (proj && Math.random() < 0.35 && d > 250) { this.hold.u = 3; this.hold.fwd = 25; this.queue.push([16, ['c']]); return out; }
       this.hold.back = 18; if (threat && (opp.move.kind === 'low' || (opp.move.crouch && Math.random() < 0.7))) this.hold.d = 18; return out;
     }
-    if (opp.air && ['jump', 'attack'].includes(opp.state) && d < 240 && r < this.blockP) { this.queue.push([1, me.cid === 'ekron' ? ['d', 's'] : ['b']]); return out; }
+    if (opp.air && ['jump', 'attack'].includes(opp.state) && d < 240 && r < this.blockP) { this.queue.push([1, me.cid === 'hokuto' ? ['b'] : ['d', 's']]); return out; }
     if (['down', 'getup', 'ko'].includes(opp.state)) { if (Math.random() < 0.5) this.hold.fwd = 10; return out; }
     if (me.meter >= 100 && d < 260 && Math.random() < 0.3 * this.aggr) { this.queue.push([1, ['x']]); return out; }
     const reach = me.c.reach;
@@ -726,8 +835,8 @@ const $ = id => document.getElementById(id);
 const G_BACK = -1.7;   // companion giraffe walks behind the fighters
 const SLASH_ANG = { a: 8, b: -38, da: 12, db: 18, ja: -30, jb: -45, ds: 70, x: 0 };
 class Fight {
-  constructor(c1, c2, mode, diff) {
-    this.mode = mode;
+  constructor(c1, c2, mode, diff, stage = 0) {
+    this.mode = mode; setStage(stage);
     this.f = [new Fighter(c1, 0), new Fighter(c2, 1)];
     this.f[0].opp = this.f[1]; this.f[1].opp = this.f[0];
     this.inp = [new Input(), new Input()];
@@ -764,8 +873,9 @@ class Fight {
     return this.projThreat(me);
   }
   projThreat(me) { return this.projs.some(p => p.owner !== me && !p.hit && (p.x - me.x) * p.vx < 0 && Math.abs(p.x - me.x) < 420); }
-  hasProj(me) { const k = me.cid === 'ekron' ? ['beam'] : ['giraffe', 'giraffe_super']; return this.projs.some(p => p.owner === me && k.includes(p.kind)); }
+  hasProj(me) { const k = { ekron: ['beam'], paul: ['wave'], hokuto: ['giraffe', 'giraffe_super'] }[me.cid]; return this.projs.some(p => p.owner === me && k.includes(p.kind)); }
   spawnProj(owner, kind) {
+    if (kind === 'wave') { if (this.hasProj(owner)) return; this.projs.push(new Proj(owner, 'wave', owner.x + owner.facing * 90, owner.y + 200, owner.facing * 8)); return; }
     if (kind === 'beam') { if (this.hasProj(owner)) return; this.projs.push(new Proj(owner, 'beam', owner.x + owner.facing * 110, owner.y + 175, owner.facing * 11)); return; }
     if (kind === 'giraffe' && this.hasProj(owner)) return;
     const f = owner.facing; let x, g;
@@ -780,7 +890,7 @@ class Fight {
     $('cutimg').src = `tex/portrait_${who.cid}.jpg`;
     $('cutimg').style.left = who.idx === 0 ? '6%' : ''; $('cutimg').style.right = who.idx === 1 ? '6%' : '';
     $('cutt').textContent = who.c.superName; $('cut').style.display = 'flex';
-    document.querySelector('#cut .band').style.background = `linear-gradient(transparent,${who.cid === 'ekron' ? 'rgba(255,150,30,.55)' : 'rgba(150,90,255,.55)'},transparent)`;
+    document.querySelector('#cut .band').style.background = `linear-gradient(transparent,${{ ekron: 'rgba(255,150,30,.55)', paul: 'rgba(60,160,255,.55)', hokuto: 'rgba(150,90,255,.55)' }[who.cid]},transparent)`;
   }
   dust(x, n) { for (let i = 0; i < n; i++) spawn(wx(x) + rnd(-0.2, 0.2), 0.05, rnd(-0.3, 0.4), rnd(-0.03, 0.03), rnd(0.005, 0.02), 26, 0.35, 'dust', 0, 1.5, false); }
   applyHit(att, dfn, o) {
@@ -883,7 +993,7 @@ class Fight {
     for (const p of this.projs) p.update(this);
     if (this.phase === 'fight' || this.phase === 'ko') this.checkHits();
     this.projs = this.projs.filter(p => { if (p.dead) { p.dispose(); return false; } return true; });
-    updateParticles(); updateBolts();
+    updateParticles(); updateBolts(); updateRings();
     for (let i = 0; i < 2; i++) { const c = this.combo[i]; if (c && --c[1] <= 0) this.combo[i] = null; }
     this.updateCompanion();
     if (this.phase === 'fight') {
@@ -1000,9 +1110,10 @@ class Fight {
 }
 
 // ---------------------------------------------------------------- menus & flow
-let fight = null, mode = '1p', charSel = 0, diff = 1, scene_ = 'title';
+const CIDS = ['ekron', 'hokuto', 'paul'];
+let fight = null, mode = '1p', charSel = 0, oppSel = 1, selStep = 'p1', stageSel = 0, diff = 1, scene_ = 'title';
 let demo = null;
-const menus = ['m-title', 'm-select', 'm-diff', 'm-help', 'm-pause', 'm-end'];
+const menus = ['m-title', 'm-select', 'm-stage', 'm-diff', 'm-help', 'm-pause', 'm-end'];
 function show(id) {
   scene_ = id;
   menus.forEach(m => $(m).classList.toggle('show', m === id));
@@ -1015,8 +1126,7 @@ function show(id) {
 function startFight() {
   if (fight) fight.dispose();
   if (demo) { demo.dispose(); demo = null; }
-  const mine = ['ekron', 'hokuto'][charSel], other = ['hokuto', 'ekron'][charSel];
-  fight = new Fight(mine, other, mode, diff);
+  fight = new Fight(CIDS[charSel], CIDS[oppSel], mode, diff, stageSel);
   show('fight');
   if (IS_TOUCH && document.documentElement.requestFullscreen && !document.fullscreenElement)
     document.documentElement.requestFullscreen().then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -1032,19 +1142,32 @@ function toTitle() {
   demo = new Fight('ekron', 'hokuto', 'demo', 1); demo.phase = 'menu';
   show('m-title');
 }
-function selCard(i) { charSel = i; document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', +c.dataset.c === charSel)); }
+function selCard(i) {
+  if (selStep === 'p2' && i === charSel) return;
+  if (selStep === 'p1') charSel = i; else oppSel = i;
+  const cur = selStep === 'p1' ? charSel : oppSel;
+  document.querySelectorAll('.card').forEach(c => { const k = +c.dataset.c; c.classList.toggle('sel', k === cur); c.classList.toggle('taken', selStep === 'p2' && k === charSel); });
+}
+function openSelect(step) {
+  selStep = step;
+  $('seltitle').textContent = step === 'p1' ? (mode === '1p' ? '選擇你的角色' : '1P 選擇角色') : (mode === '1p' ? '選擇對手' : '2P 選擇角色');
+  if (step === 'p2' && oppSel === charSel) oppSel = (charSel + 1) % CIDS.length;
+  selCard(step === 'p1' ? charSel : oppSel); show('m-select');
+}
+function selStage(i) { stageSel = i; document.querySelectorAll('#m-stage [data-s]').forEach(b => b.classList.toggle('sel', +b.dataset.s === stageSel)); }
 function selDiff(d) { diff = d; document.querySelectorAll('#m-diff [data-d]').forEach(b => b.classList.toggle('sel', +b.dataset.d === diff)); }
 function handleTap(b) {
   Audio.init();
   play('select');
   if (b.dataset.c !== undefined) { selCard(+b.dataset.c); return; }
   if (b.dataset.d !== undefined) { selDiff(+b.dataset.d); startFight(); return; }
+  if (b.dataset.s !== undefined) { selStage(+b.dataset.s); mode === '1p' ? show('m-diff') : startFight(); return; }
   const a = b.dataset.act;
-  if (a === '1p' || a === '2p') { mode = a; $('seltitle').textContent = a === '1p' ? '選擇你的角色' : '1P 選擇角色（2P 用另一位）'; show('m-select'); }
+  if (a === '1p' || a === '2p') { mode = a; openSelect('p1'); }
   else if (a === 'help') show('m-help');
   else if (a === 'music') { Audio.music = !Audio.music; Audio.music ? Audio.startMusic() : Audio.stopMusic(); $('bmusic').textContent = '音樂：' + (Audio.music ? '開' : '關'); }
-  else if (a === 'back') show(scene_ === 'm-diff' ? 'm-select' : 'm-title');
-  else if (a === 'pick') { mode === '1p' ? show('m-diff') : startFight(); }
+  else if (a === 'back') { if (scene_ === 'm-diff') show('m-stage'); else if (scene_ === 'm-stage') openSelect('p2'); else if (scene_ === 'm-select' && selStep === 'p2') openSelect('p1'); else show('m-title'); }
+  else if (a === 'pick') { if (selStep === 'p1') openSelect('p2'); else { selStage(stageSel); show('m-stage'); } }
   else if (a === 'resume') { fight.paused = false; show('fight'); }
   else if (a === 'quit') toTitle();
   else if (a === 'again') startFight();
@@ -1053,15 +1176,15 @@ const pauseGame = () => { if (fight && fight.phase !== 'end') { fight.paused = t
 document.addEventListener('click', e => {
   Audio.init();
   if (e.target.closest('#pause')) { pauseGame(); return; }
-  const b = e.target.closest('[data-act],[data-c],[data-d]'); if (b) handleTap(b);
+  const b = e.target.closest('[data-act],[data-c],[data-d],[data-s]'); if (b) handleTap(b);
 });
 // iPhone: answer the finger lift directly instead of waiting for Safari's synthetic click
 // (with page scrolling disabled, some iOS versions never send that click)
 let tapStart = null;
 document.addEventListener('touchstart', e => {
   const t = e.changedTouches[0];
-  tapStart = { x: t.clientX, y: t.clientY, el: e.target.closest('[data-act],[data-c],[data-d],#pause') };
-  DBG.tap = 'start ' + (tapStart.el ? (tapStart.el.dataset.act || tapStart.el.dataset.c || tapStart.el.dataset.d || tapStart.el.id) : e.target.tagName);
+  tapStart = { x: t.clientX, y: t.clientY, el: e.target.closest('[data-act],[data-c],[data-d],[data-s],#pause') };
+  DBG.tap = 'start ' + (tapStart.el ? (tapStart.el.dataset.act || tapStart.el.dataset.c || tapStart.el.dataset.d || tapStart.el.dataset.s || tapStart.el.id) : e.target.tagName);
 }, { passive: true });
 document.addEventListener('touchend', e => {
   if (!tapStart || !tapStart.el) return;
@@ -1083,7 +1206,12 @@ function onMenuKey(e) {
   const menu = $(scene_); if (!menu) return;
   const btns = [...menu.querySelectorAll('.btn')].filter(b => b.offsetParent);
   let i = btns.findIndex(b => b.classList.contains('sel')); if (i < 0) i = 0;
-  if (scene_ === 'm-select' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) { selCard(charSel ^ 1); play('move'); return; }
+  if (scene_ === 'm-select' && ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(e.code)) {
+    const d = ['ArrowLeft', 'KeyA'].includes(e.code) ? -1 : 1, n = CIDS.length;
+    let k = selStep === 'p1' ? charSel : oppSel;
+    do { k = (k + d + n) % n; } while (selStep === 'p2' && k === charSel);
+    selCard(k); play('move'); return;
+  }
   if (['ArrowUp', 'KeyW', 'ArrowLeft'].includes(e.code)) i = (i - 1 + btns.length) % btns.length;
   else if (['ArrowDown', 'KeyS', 'ArrowRight'].includes(e.code)) i = (i + 1) % btns.length;
   else if (['Enter', 'Space', 'KeyJ', 'KeyF', 'NumpadEnter'].includes(e.code)) { btns[i] && btns[i].click(); return; }
@@ -1157,10 +1285,12 @@ function frameBody(now) {
 
 (async () => {
   try {
-    const [e, h, g, s] = await Promise.all(['ekron', 'hokuto', 'giraffe', 'stage'].map(loadGLB));
-    Object.assign(ASSETS, { ekron: e, hokuto: h, giraffe: g });
+    const [e, h, pl, g, s, st] = await Promise.all(['ekron', 'hokuto', 'paul', 'giraffe', 'stage', 'street'].map(loadGLB));
+    Object.assign(ASSETS, { ekron: e, hokuto: h, paul: pl, giraffe: g });
     s.traverse(o => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = !/terrain|plaza|tile|edge|mtn|snow|hill|cloud/.test(o.name); } });
-    scene.add(mergeStatic(s));
+    st.traverse(o => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = !/sidewalk|tile|road|lane|curb|far|band|banner|sign|glass|upper|shopback/.test(o.name); } });
+    STAGES[0].group = mergeStatic(s); STAGES[1].group = mergeStatic(st);
+    scene.add(STAGES[0].group); scene.add(STAGES[1].group); setStage(0);
     $('load').style.display = 'none';
     toTitle();
     requestAnimationFrame(frame);
@@ -1170,4 +1300,4 @@ function frameBody(now) {
     console.error(err);
   }
 })();
-window.__game = { scene, camera, THREE, renderer, QUALITY, shot(px, py, pz, tx, ty, tz) { (fight || demo).render(); camera.position.set(px, py, pz); camera.lookAt(tx, ty, tz); renderer.render(scene, camera); }, get fight() { return fight; }, step(n = 1) { for (let i = 0; i < n; i++) { if (fight && scene_ === 'fight') fight.update(); } (fight || demo).render(); renderer.render(scene, camera); return fight && [fight.phase, fight.timer, fight.f[0].hp, fight.f[1].hp, fight.wins]; }, startFight: (m = '1p', c = 0, d = 1) => { mode = m; charSel = c; diff = d; startFight(); } };
+window.__game = { scene, camera, THREE, renderer, QUALITY, shot(px, py, pz, tx, ty, tz) { (fight || demo).render(); camera.position.set(px, py, pz); camera.lookAt(tx, ty, tz); renderer.render(scene, camera); }, get fight() { return fight; }, step(n = 1) { for (let i = 0; i < n; i++) { if (fight && scene_ === 'fight') fight.update(); } (fight || demo).render(); renderer.render(scene, camera); return fight && [fight.phase, fight.timer, fight.f[0].hp, fight.f[1].hp, fight.wins]; }, startFight: (m = '1p', c = 0, d = 1, o = null, st = 0) => { mode = m; charSel = c; oppSel = o === null ? (c === 0 ? 1 : 0) : o; stageSel = st; diff = d; startFight(); } };

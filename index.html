@@ -64,8 +64,9 @@
     color:#fff; background:rgba(40,20,50,.7); border:2px solid #b89060; border-radius:12px; cursor:pointer; font-family:inherit; }
   .btn.sel, .btn:hover { border-color:var(--gold); background:rgba(255,170,40,.35); color:#ffe08a; }
   .row { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
-  .card { pointer-events:auto; width:min(40vw,300px); padding:12px; border:3px solid #6a5a70; border-radius:14px; background:rgba(0,0,0,.45); cursor:pointer; text-align:center; }
+  .card { pointer-events:auto; width:min(30vw,250px); padding:12px; border:3px solid #6a5a70; border-radius:14px; background:rgba(0,0,0,.45); cursor:pointer; text-align:center; }
   .card.sel { border-color:var(--gold); background:rgba(255,180,60,.22); }
+  .card.taken { opacity:.35; }
   .card img { width:46%; height:auto; border:2px solid var(--gold); }
   .card h3 { margin:6px 0 2px; font:900 clamp(20px,3.5vw,40px)/1 Impact,sans-serif; color:var(--gold); }
   .card p { margin:2px 0; font-size:clamp(11px,1.6vw,16px); }
@@ -147,8 +148,14 @@ window.addEventListener('unhandledrejection', function (e) { __showErr('Promise:
   <div class="row">
     <div class="card" data-c="0"><img src="tex/portrait_ekron.jpg" alt=""><h3>EKRON</h3><p>劍術大師</p><p>必殺：A-SHA 劍氣</p><p>超必殺：雷霆一閃</p></div>
     <div class="card" data-c="1"><img src="tex/portrait_hokuto.jpg" alt=""><h3>HOKUTO</h3><p>長頸鹿馴獸師</p><p>必殺：長頸鹿衝撞</p><p>超必殺：北斗百裂拳</p></div>
+    <div class="card" data-c="2"><img src="tex/portrait_paul.jpg" alt=""><h3>PAUL LIN</h3><p>吹笛大師</p><p>必殺：音波笛</p><p>超必殺：魔笛狂想曲</p></div>
   </div>
   <div class="row"><button class="btn" data-act="back" style="min-width:140px">返回</button><button class="btn sel" data-act="pick" style="min-width:180px">確定</button></div>
+</div>
+<div class="menu" id="m-stage">
+  <div class="tag out" style="font-size:clamp(18px,3vw,32px);color:#ffd25a">選擇場景</div>
+  <button class="btn sel" data-s="0">麵碗山谷</button><button class="btn" data-s="1">丹丹漢堡店</button>
+  <button class="btn" data-act="back" style="min-width:140px">返回</button>
 </div>
 <div class="menu" id="m-diff">
   <div class="tag out" style="font-size:clamp(18px,3vw,32px);color:#ffd25a">選擇難度</div>
@@ -163,6 +170,7 @@ window.addEventListener('unhandledrejection', function (e) { __showErr('Promise:
     <tr><td>必殺／超必殺</td><td>U I</td><td>R T</td><td>數字鍵 4 5</td></tr></table>
     <p>📱 手機：左下搖桿移動（往上跳、往下蹲），右下按鈕出招。手機直拿也會自動轉成橫向寬螢幕。</p>
     <p>防禦：按住「後」方向（蹲防擋下段）。↓＋攻擊＝蹲姿招式，↓＋必殺＝昇龍劍／旋風腿。</p>
+    <p>PAUL LIN：必殺「音波笛」射出音波 ／ ↓+必殺「音爆」對空 ／ 超必殺「魔笛狂想曲」連續音波。</p>
     <p>連段：輕 → 重 → 必殺 可取消；集氣滿（MAX）可放超必殺。HOKUTO 的長頸鹿會一直跟著他，放必殺就衝出去！</p>
   </div>
   <button class="btn" data-act="back">返回</button>
@@ -177,6 +185,6 @@ window.addEventListener('unhandledrejection', function (e) { __showErr('Promise:
 </div>
 <div id="load">載入中…</div>
 </div>
-<script type="module" src="game.js?v=20261111f"></script>
+<script type="module" src="game.js?v=20261112b"></script>
 </body>
 </html>
