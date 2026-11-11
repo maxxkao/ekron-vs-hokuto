@@ -174,7 +174,7 @@ if (!document.createElement('canvas').getContext('webgl2')) {
 // phones: no MSAA, lower resolution, cheaper shadows; quality drops further on its own if frames run slow
 const LOW_END = IS_IOS && Math.max(screen.width, screen.height) <= 736 || location.search.includes('low');
 const QUALITY = { pr: LOW_END ? 1 : IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: LOW_END ? 2 : 0 };
-window.__BUILD = '20261111c' + (LOW_END ? ' low' : '');
+window.__BUILD = '20261111e' + (LOW_END ? ' low' : '');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, powerPreference: 'high-performance' });
 renderer.setPixelRatio(QUALITY.pr);
 renderer.shadowMap.enabled = !LOW_END;
@@ -271,7 +271,7 @@ function updateBolts() { for (let i = bolts.length - 1; i >= 0; i--) { if (--bol
 // ---------------------------------------------------------------- assets
 const loader = new GLTFLoader();
 const ASSETS = {};
-const BUILD = '20261111c';   // bump when models change so browsers don't keep old copies
+const BUILD = '20261111e';   // bump when models change so browsers don't keep old copies
 let PACKED = null;
 async function loadGLB(name) {
   try { return await new Promise((res, rej) => loader.load(`models/${name}.glb?v=${BUILD}`, g => res(g.scene), undefined, rej)); }
@@ -1029,9 +1029,8 @@ function toTitle() {
 }
 function selCard(i) { charSel = i; document.querySelectorAll('.card').forEach(c => c.classList.toggle('sel', +c.dataset.c === charSel)); }
 function selDiff(d) { diff = d; document.querySelectorAll('#m-diff [data-d]').forEach(b => b.classList.toggle('sel', +b.dataset.d === diff)); }
-document.addEventListener('click', e => {
+function handleTap(b) {
   Audio.init();
-  const b = e.target.closest('[data-act],[data-c],[data-d]'); if (!b) return;
   play('select');
   if (b.dataset.c !== undefined) { selCard(+b.dataset.c); return; }
   if (b.dataset.d !== undefined) { selDiff(+b.dataset.d); startFight(); return; }
@@ -1044,9 +1043,33 @@ document.addEventListener('click', e => {
   else if (a === 'resume') { fight.paused = false; show('fight'); }
   else if (a === 'quit') toTitle();
   else if (a === 'again') startFight();
+}
+const pauseGame = () => { if (fight && fight.phase !== 'end') { fight.paused = true; show('m-pause'); } };
+document.addEventListener('click', e => {
+  Audio.init();
+  if (e.target.closest('#pause')) { pauseGame(); return; }
+  const b = e.target.closest('[data-act],[data-c],[data-d]'); if (b) handleTap(b);
 });
-$('pause').addEventListener('click', e => { e.stopPropagation(); if (fight && fight.phase !== 'end') { fight.paused = true; show('m-pause'); } });
+// iPhone: answer the finger lift directly instead of waiting for Safari's synthetic click
+// (with page scrolling disabled, some iOS versions never send that click)
+let tapStart = null;
+document.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  tapStart = { x: t.clientX, y: t.clientY, el: e.target.closest('[data-act],[data-c],[data-d],#pause') };
+  DBG.tap = 'start ' + (tapStart.el ? (tapStart.el.dataset.act || tapStart.el.dataset.c || tapStart.el.dataset.d || tapStart.el.id) : e.target.tagName);
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!tapStart || !tapStart.el) return;
+  const t = e.changedTouches[0], el = tapStart.el, moved = Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y); tapStart = null;
+  if (moved > 20) return;           // a drag, not a tap
+  const end = document.elementFromPoint(t.clientX, t.clientY);
+  if (!end || !el.contains(end)) return;
+  e.preventDefault();               // stops the duplicate synthetic click
+  DBG.tap = 'tap ' + (el.dataset.act || el.dataset.c || el.dataset.d || el.id);
+  if (el.id === 'pause') pauseGame(); else handleTap(el);
+}, { passive: false });
 if (IS_TOUCH) $('b2p').style.display = 'none';
+$('ver').textContent = 'build ' + window.__BUILD;
 // keyboard menu navigation
 function onMenuKey(e) {
   Audio.init();
@@ -1106,7 +1129,14 @@ function frame(now) {
   if (frameErr) return;
   try { frameBody(now); } catch (err) { frameErr = true; window.__showErr && __showErr('frame: ' + (err.stack || err)); }
 }
+const DBG = { on: location.search.includes('debug'), n: 0, t0: 0, fps: 0, tap: '-' };
+if (DBG.on) { const d = document.createElement('div'); d.id = 'dbg'; d.style.cssText = 'position:absolute;left:4px;bottom:4px;z-index:98;background:#000a;color:#7f7;font:12px monospace;padding:3px 6px;pointer-events:none'; document.getElementById('app').appendChild(d); }
 function frameBody(now) {
+  if (DBG.on) {
+    DBG.n++;
+    if (now - DBG.t0 > 1000) { DBG.fps = Math.round(DBG.n * 1000 / (now - DBG.t0)); DBG.n = 0; DBG.t0 = now;
+      const d = document.getElementById('dbg'); if (d) d.textContent = `build ${window.__BUILD} fps ${DBG.fps} q${QUALITY.level} pr${renderer.getPixelRatio()} ${scene_} calls ${renderer.info.render.calls} | ${DBG.tap}`; }
+  }
   watchPerf(now);
   acc += Math.min(100, now - last); last = now;
   while (acc >= STEP) {
