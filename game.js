@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as skClone } from 'three/addons/utils/SkeletonUtils.js';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ---------------------------------------------------------------- constants
 const PX = 1 / 170;                    // game px -> metres
@@ -164,10 +164,17 @@ const play = (n, v) => Audio.play(n, v);
 
 // ---------------------------------------------------------------- renderer / scene
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_TOUCH ? 1.5 : 2));
+// WebGL2 is required (iOS 15+); say so plainly instead of showing a blank screen
+if (!document.createElement('canvas').getContext('webgl2')) {
+  document.getElementById('load').innerHTML = '這台裝置的瀏覽器不支援 WebGL2<br>iPhone 請更新到 iOS 15 以上（建議 16.4 以上）再開啟';
+  throw new Error('WebGL2 not supported');
+}
+// phones: no MSAA, lower resolution, cheaper shadows; quality drops further on its own if frames run slow
+const QUALITY = { pr: IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: 0 };
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, powerPreference: 'high-performance' });
+renderer.setPixelRatio(QUALITY.pr);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = IS_TOUCH ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -258,11 +265,12 @@ function updateBolts() { for (let i = bolts.length - 1; i >= 0; i--) { if (--bol
 // ---------------------------------------------------------------- assets
 const loader = new GLTFLoader();
 const ASSETS = {};
+const BUILD = '20261111b';   // bump when models change so browsers don't keep old copies
 let PACKED = null;
 async function loadGLB(name) {
-  try { return await new Promise((res, rej) => loader.load(`models/${name}.glb`, g => res(g.scene), undefined, rej)); }
+  try { return await new Promise((res, rej) => loader.load(`models/${name}.glb?v=${BUILD}`, g => res(g.scene), undefined, rej)); }
   catch (e) {   // fall back to the base64-packed models (used where .glb files cannot be served)
-    PACKED = PACKED || (await import('./models/glb.js')).default;
+    PACKED = PACKED || (await import(`./models/glb.js?v=${BUILD}`)).default;
     const bin = Uint8Array.from(atob(PACKED[name]), c => c.charCodeAt(0)).buffer;
     return new Promise((res, rej) => loader.parse(bin, 'models/', g => res(g.scene), rej));
   }
@@ -1052,8 +1060,43 @@ function onMenuKey(e) {
 
 // ---------------------------------------------------------------- main loop
 let acc = 0, last = performance.now();
+// merge the static stage by material: ~220 draw calls -> a few dozen (matters a lot on older phones)
+function mergeStatic(root) {
+  root.updateMatrixWorld(true);
+  const groups = new Map();
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone().applyMatrix4(o.matrixWorld);
+    const key = [o.material.uuid, Object.keys(g.attributes).sort().join(','), g.index ? 1 : 0, o.castShadow ? 1 : 0].join('|');
+    if (!groups.has(key)) groups.set(key, { mat: o.material, cast: o.castShadow, geos: [] });
+    groups.get(key).geos.push(g);
+  });
+  const out = new THREE.Group();
+  for (const { mat, cast, geos } of groups.values()) {
+    const merged = geos.length > 1 ? mergeGeometries(geos) : geos[0];
+    if (!merged) continue;
+    const m = new THREE.Mesh(merged, mat); m.castShadow = cast; m.receiveShadow = true; m.matrixAutoUpdate = false;
+    out.add(m);
+  }
+  return out;
+}
+// automatic downgrade when a fight runs slow: first lower resolution, then turn shadows off
+const perf = { n: 0, sum: 0, last: 0 };
+function watchPerf(now) {
+  if (!fight || scene_ !== 'fight' || fight.paused || QUALITY.level >= 2) { perf.n = perf.sum = 0; perf.last = now; return; }
+  const dt = now - perf.last; perf.last = now;
+  if (dt <= 0 || dt > 200) return;
+  perf.n++; perf.sum += dt;
+  if (perf.n < 150) return;
+  const avg = perf.sum / perf.n; perf.n = perf.sum = 0;
+  if (avg < 24) return;
+  QUALITY.level++;
+  if (QUALITY.level === 1) { QUALITY.pr = 1; renderer.setPixelRatio(1); resize(); }
+  else { renderer.shadowMap.enabled = false; sun.castShadow = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
+}
 function frame(now) {
   requestAnimationFrame(frame);
+  watchPerf(now);
   acc += Math.min(100, now - last); last = now;
   while (acc >= STEP) {
     acc -= STEP;
@@ -1071,7 +1114,7 @@ function frame(now) {
     const [e, h, g, s] = await Promise.all(['ekron', 'hokuto', 'giraffe', 'stage'].map(loadGLB));
     Object.assign(ASSETS, { ekron: e, hokuto: h, giraffe: g });
     s.traverse(o => { if (o.isMesh) { o.receiveShadow = true; o.castShadow = !/terrain|plaza|tile|edge|mtn|snow|hill|cloud/.test(o.name); } });
-    scene.add(s);
+    scene.add(mergeStatic(s));
     $('load').style.display = 'none';
     toTitle();
     requestAnimationFrame(frame);
@@ -1080,4 +1123,4 @@ function frame(now) {
     console.error(err);
   }
 })();
-window.__game = { scene, camera, THREE, shot(px, py, pz, tx, ty, tz) { (fight || demo).render(); camera.position.set(px, py, pz); camera.lookAt(tx, ty, tz); renderer.render(scene, camera); }, get fight() { return fight; }, step(n = 1) { for (let i = 0; i < n; i++) { if (fight && scene_ === 'fight') fight.update(); } (fight || demo).render(); renderer.render(scene, camera); return fight && [fight.phase, fight.timer, fight.f[0].hp, fight.f[1].hp, fight.wins]; }, startFight: (m = '1p', c = 0, d = 1) => { mode = m; charSel = c; diff = d; startFight(); } };
+window.__game = { scene, camera, THREE, renderer, QUALITY, shot(px, py, pz, tx, ty, tz) { (fight || demo).render(); camera.position.set(px, py, pz); camera.lookAt(tx, ty, tz); renderer.render(scene, camera); }, get fight() { return fight; }, step(n = 1) { for (let i = 0; i < n; i++) { if (fight && scene_ === 'fight') fight.update(); } (fight || demo).render(); renderer.render(scene, camera); return fight && [fight.phase, fight.timer, fight.f[0].hp, fight.f[1].hp, fight.wins]; }, startFight: (m = '1p', c = 0, d = 1) => { mode = m; charSel = c; diff = d; startFight(); } };
