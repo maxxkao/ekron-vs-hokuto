@@ -9,6 +9,8 @@ const PX = 1 / 170;                    // game px -> metres
 const WALL_L = 60, WALL_R = 1220, MAXHP = 1000, GRAV = 0.95;
 const STEP = 1000 / 60;
 const D2R = Math.PI / 180;
+// small, older iPhones (6/7/8/SE class): start in low quality
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IS_TOUCH = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window || location.search.includes('touch');
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -170,10 +172,14 @@ if (!document.createElement('canvas').getContext('webgl2')) {
   throw new Error('WebGL2 not supported');
 }
 // phones: no MSAA, lower resolution, cheaper shadows; quality drops further on its own if frames run slow
-const QUALITY = { pr: IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: 0 };
+const LOW_END = IS_IOS && Math.max(screen.width, screen.height) <= 736 || location.search.includes('low');
+const QUALITY = { pr: LOW_END ? 1 : IS_TOUCH ? Math.min(window.devicePixelRatio, 1.25) : Math.min(window.devicePixelRatio, 2), level: LOW_END ? 2 : 0 };
+window.__BUILD = '20261111c' + (LOW_END ? ' low' : '');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_TOUCH, powerPreference: 'high-performance' });
 renderer.setPixelRatio(QUALITY.pr);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !LOW_END;
+// GPU memory crash on small phones: tell the player instead of freezing
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); window.__showErr && __showErr('WebGL context lost（顯示記憶體不足）。請關閉其他分頁後重新載入。'); });
 renderer.shadowMap.type = IS_TOUCH ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -193,7 +199,7 @@ camera.position.set(0, 1.9, 9);
 
 const hemi = new THREE.HemisphereLight(0xdfe9ff, 0xf2c3b4, 1.25); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0dc, 2.6);
-sun.position.set(-6, 10, 7); sun.castShadow = true;
+sun.position.set(-6, 10, 7); sun.castShadow = !LOW_END;
 sun.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 8, bottom: -3, near: 1, far: 40 });
 sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03; sun.shadow.radius = 4;
@@ -265,7 +271,7 @@ function updateBolts() { for (let i = bolts.length - 1; i >= 0; i--) { if (--bol
 // ---------------------------------------------------------------- assets
 const loader = new GLTFLoader();
 const ASSETS = {};
-const BUILD = '20261111b';   // bump when models change so browsers don't keep old copies
+const BUILD = '20261111c';   // bump when models change so browsers don't keep old copies
 let PACKED = null;
 async function loadGLB(name) {
   try { return await new Promise((res, rej) => loader.load(`models/${name}.glb?v=${BUILD}`, g => res(g.scene), undefined, rej)); }
@@ -1083,7 +1089,7 @@ function mergeStatic(root) {
 // automatic downgrade when a fight runs slow: first lower resolution, then turn shadows off
 const perf = { n: 0, sum: 0, last: 0 };
 function watchPerf(now) {
-  if (!fight || scene_ !== 'fight' || fight.paused || QUALITY.level >= 2) { perf.n = perf.sum = 0; perf.last = now; return; }
+  if ((fight && fight.paused) || QUALITY.level >= 2) { perf.n = perf.sum = 0; perf.last = now; return; }
   const dt = now - perf.last; perf.last = now;
   if (dt <= 0 || dt > 200) return;
   perf.n++; perf.sum += dt;
@@ -1094,8 +1100,13 @@ function watchPerf(now) {
   if (QUALITY.level === 1) { QUALITY.pr = 1; renderer.setPixelRatio(1); resize(); }
   else { renderer.shadowMap.enabled = false; sun.castShadow = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; }); }
 }
+let frameErr = false;
 function frame(now) {
   requestAnimationFrame(frame);
+  if (frameErr) return;
+  try { frameBody(now); } catch (err) { frameErr = true; window.__showErr && __showErr('frame: ' + (err.stack || err)); }
+}
+function frameBody(now) {
   watchPerf(now);
   acc += Math.min(100, now - last); last = now;
   while (acc >= STEP) {
@@ -1119,7 +1130,8 @@ function frame(now) {
     toTitle();
     requestAnimationFrame(frame);
   } catch (err) {
-    $('load').textContent = '載入失敗：' + err.message + '（請用 start_server.bat 開啟）';
+    $('load').textContent = '載入失敗：' + err.message;
+    window.__showErr && __showErr('load: ' + (err.stack || err));
     console.error(err);
   }
 })();
